@@ -49,6 +49,11 @@ val data = spark.read
 
 // COMMAND ----------
 
+// MAGIC %md
+// MAGIC IDs de las provincias del Ecuador obtenidos de: http://web.educacion.gob.ec/CNIE/pdf/Anexo%20con%20Codificacion.pdf
+
+// COMMAND ----------
+
 val dataProvincias = data.na.replace("provincia", Map(
 	"01" -> "Azuay",
 	"02" -> "Bolivar",
@@ -98,7 +103,7 @@ dataLoja.count
 
 // COMMAND ----------
 
-dataProvincias.where($"edad" === 15).where($"condicion_actividad" === "5 - Empleo no remunerado").groupBy("provincia").count().sort("provincia").show(24, false)
+dataProvincias.where($"edad" === 15).where($"condicion_actividad" === "5 - Empleo no remunerado").groupBy("provincia").count().sort($"count".desc).show(24, false)
 
 // COMMAND ----------
 
@@ -111,19 +116,19 @@ dataProvincias.where($"edad" === 15).where($"condicion_actividad" === "5 - Emple
 
 // COMMAND ----------
 
-dataProvincias.where($"edad" >= 15).where($"edad" <= 30).groupBy("provincia").count().sort("provincia").show(24, false)
+dataProvincias.where($"edad" >= 15).where($"edad" <= 30).groupBy("provincia").count().sort($"count".desc).show(24, false)
 
 // COMMAND ----------
 
-dataProvincias.where($"edad" >= 31).where($"edad" <= 50).groupBy("provincia").count().sort("provincia").show(24, false)
+dataProvincias.where($"edad" >= 31).where($"edad" <= 50).groupBy("provincia").count().sort($"count".desc).show(24, false)
 
 // COMMAND ----------
 
-dataProvincias.where($"edad" >= 51).where($"edad" <= 70).groupBy("provincia").count().sort("provincia").show(24, false)
+dataProvincias.where($"edad" >= 51).where($"edad" <= 70).groupBy("provincia").count().sort($"count".desc).show(24, false)
 
 // COMMAND ----------
 
-dataProvincias.where($"edad" >= 71).groupBy("provincia").count().sort("provincia").show(24, false)
+dataProvincias.where($"edad" >= 71).groupBy("provincia").count().sort($"count".desc).show(24, false)
 
 // COMMAND ----------
 
