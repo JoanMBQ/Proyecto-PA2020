@@ -84,6 +84,16 @@ val dataProvincias = data.na.replace("provincia", Map(
 // COMMAND ----------
 
 // MAGIC %md
+// MAGIC ### DATAFRAME DE LA PROVINCIA DE LOJA
+
+// COMMAND ----------
+
+val dataLoja = dataProvincias.where($"provincia" === "Loja")
+dataLoja.count
+
+// COMMAND ----------
+
+// MAGIC %md
 // MAGIC ##Preguntas - Tercer Entregable
 
 // COMMAND ----------
@@ -180,3 +190,64 @@ display(dataProvincias.groupBy("provincia").agg(sum("ingreso_laboral") as ("Tota
 // COMMAND ----------
 
 display(dataProvincias.groupBy("anio").pivot("provincia").agg(sum("ingreso_laboral") as ("Total de ingresos")).orderBy("anio"))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### 6) ¿Cuántas personas económicamente activas por provincia están en la condición de Desempleo Abierto?
+
+// COMMAND ----------
+
+display(dataProvincias.where($"condicion_actividad" === "7 - Desempleo abierto").groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+
+// COMMAND ----------
+
+display(dataProvincias.where($"condicion_actividad" === "7 - Desempleo abierto").groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### 7) ¿Cuántas personas económicamente activas por provincia están en la condición de Empleo Adecuado o Pleno?
+
+// COMMAND ----------
+
+display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### 8) ¿Cuál es el número de personas economicamente activas en los diferentes sectores en el Ecuador?
+
+// COMMAND ----------
+
+display(dataProvincias.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy("Año"))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### 9) ¿Cuál es el número de personas economicamente activas en los diferentes sectores en la provincia de Loja?
+
+// COMMAND ----------
+
+display(dataLoja.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy( $"1 - Sector Formal".desc))
+
+// COMMAND ----------
+
+println((f"${(dataLoja.where($"sectorizacion" === "1 - Sector Formal").count / dataLoja.count.toDouble) *100}%.3f%% En la provincia de Loja trabajan en el sector Formal"))
+println((f"${(dataLoja.where($"sectorizacion" === "2 - Sector Informal").count / dataLoja.count.toDouble) *100}%.3f%% En la provincia de Loja trabajan en el sector Informal"))
+println((f"${(dataLoja.where($"sectorizacion" === "3 - Empleo Doméstico").count / dataLoja.count.toDouble) *100}%.3f%% En la provincia de Loja trabajan en el sector Domestico"))
+println((f"${(dataLoja.where($"sectorizacion" === "4 - No Clasificados por Sector").count / dataLoja.count.toDouble) *100}%.3f%% En la provincia de Loja trabajan en un sector No clasificado"))
+println((f"${(dataLoja.where($"sectorizacion".isNull).count / dataLoja.count.toDouble) *100}%.3f%% En la provincia de Loja No tienen completa esta información"))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### 10) ¿Cantidad actividad en A. Agricultura, ganadería caza y silvicultura y pesca por provincia?
+
+// COMMAND ----------
+
+display(dataProvincias.where($"rama_actividad" === "01 - A. Agricultura, ganadería caza y silvicultura y pesca").groupBy("provincia").count().sort($"count".desc))
+
+// COMMAND ----------
+
+display(dataProvincias.where($"rama_actividad" === "01 - A. Agricultura, ganadería caza y silvicultura y pesca").groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
