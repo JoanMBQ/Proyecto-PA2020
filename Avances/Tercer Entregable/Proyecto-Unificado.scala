@@ -195,10 +195,29 @@ display(dataProvincias.groupBy("anio").pivot("provincia").agg(sum("ingreso_labor
 
 // MAGIC %md
 // MAGIC ### 6) ¿Cuántas personas económicamente activas por provincia están en la condición de Desempleo?
+// MAGIC Se desea conocer cuantas de las personas económicamente activas encuestadas se encontraban en la condicion de desempleo.
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).groupBy("provincia").count().sort($"count".desc))
+// MAGIC %md
+// MAGIC Primero se procederá a obtener el total de encuestados por provincia que estuvieran en condición de desempleo entre los años 2015 y 2019.
+
+// COMMAND ----------
+
+display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).where($"anio" === 2015).groupBy("provincia").count().sort($"count".desc))
+
+// COMMAND ----------
+
+display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).where($"anio" === 2017).groupBy("provincia").count().sort($"count".desc))
+
+// COMMAND ----------
+
+display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).where($"anio" === 2019).groupBy("provincia").count().sort($"count".desc))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC Ahora los mostramos en un gráfico de barras agrupándolos por provincia, pero agrupandolos en los diferentes años (2015, 2016, 2017, 2018, 2019)
 
 // COMMAND ----------
 
@@ -211,14 +230,51 @@ display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto"
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") && ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy("provincia").count().sort($"count".desc))
+display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") && ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2015).groupBy("provincia").count().sort($"count".desc))
 
 // COMMAND ----------
 
-display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").groupBy("provincia").count().sort($"count".desc))
+display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") && ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2017).groupBy("provincia").count().sort($"count".desc))
 
 // COMMAND ----------
 
+display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") && ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2019).groupBy("provincia").count().sort($"count".desc))
+
+// COMMAND ----------
+
+display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") && ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### 7.1) Cuantas de las personas con empleo tienen un empleo adecuado o pleno?
+// MAGIC Tomando en cuenta los datos obtenidos anteriormente, se desea saber cuantas personas encuestadas se encontraban en la condición de trabajar en un empleo pleno.
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC Primero obtenemos el total de encuestados por provincia que estuvieran en condición de desempleo entre los años 2015 y 2019.
+
+// COMMAND ----------
+
+display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").where($"anio" === 2015).groupBy("provincia").count().sort($"count".desc))
+
+// COMMAND ----------
+
+display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").where($"anio" === 2017).groupBy("provincia").count().sort($"count".desc))
+
+// COMMAND ----------
+
+display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").where($"anio" === 2019).groupBy("provincia").count().sort($"count".desc))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC Posteriormente los mostramos en un gráfico de barras agrupándolos por provincia en cada año que se realizó la encuesta.
+
+// COMMAND ----------
+
+// DBTITLE 0,Untitled
 display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
 
 // COMMAND ----------
@@ -233,7 +289,25 @@ display(dataProvincias.groupBy(col("anio").as("Año")).pivot("sectorizacion").co
 // COMMAND ----------
 
 // MAGIC %md
+// MAGIC Una vez obtenido el número de cuantas personas trabajan en cada sector de empleo, se procede a saber a que porcentaje corresponden.
+
+// COMMAND ----------
+
+display(dataProvincias.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy("Año"))
+
+// COMMAND ----------
+
+// MAGIC %md
 // MAGIC ### 9) ¿Cuál es el número de personas economicamente activas en los diferentes sectores en la provincia de Loja?
+
+// COMMAND ----------
+
+display(dataLoja.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy("Año"))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC Una vez obtenido el número de cuantas personas trabajan en cada sector de empleo en la provincia de Loja, se procede a saber a que porcentaje corresponden.
 
 // COMMAND ----------
 
