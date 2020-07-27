@@ -217,7 +217,7 @@ display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto"
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC Ahora los mostramos en un gráfico de barras agrupándolos por provincia, pero agrupandolos en los diferentes años (2015, 2016, 2017, 2018, 2019)
+// MAGIC Ahora los mostramos en un gráfico de barras agrupándolos por provincia, pero separandolos en los diferentes años (2015, 2016, 2017, 2018, 2019)
 
 // COMMAND ----------
 
@@ -227,22 +227,34 @@ display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto"
 
 // MAGIC %md
 // MAGIC ### 7) ¿Cuántas personas económicamente activas por provincia están en la condición de Empleo Adecuado o Pleno?
+// MAGIC Se desea conocer cuantas de las personas económicamente activas encuestadas se encontraban en la condicion de desempleo.
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") && ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2015).groupBy("provincia").count().sort($"count".desc))
+// MAGIC %md
+// MAGIC 
+// MAGIC Primero se procederá a obtener el total de encuestados por provincia que estuvieran en condición de desempleo entre los años 2015 y 2019.
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") && ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2017).groupBy("provincia").count().sort($"count".desc))
+display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2015).groupBy("provincia").count().sort($"count".desc))
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") && ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2019).groupBy("provincia").count().sort($"count".desc))
+display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2017).groupBy("provincia").count().sort($"count".desc))
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") && ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2019).groupBy("provincia").count().sort($"count".desc))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC Ahora los mostramos en un gráfico de barras agrupándolos por provincia, pero separandolos en los diferentes años (2015, 2016, 2017, 2018, 2019)
+
+// COMMAND ----------
+
+display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
 
 // COMMAND ----------
 
@@ -316,7 +328,33 @@ display(dataLoja.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 10) ¿Cantidad actividad en A. Agricultura, ganadería caza y silvicultura y pesca por provincia?
+// MAGIC ### 10) Cual es la cantidad de hombres y mujeres en condición de desempleo en la provincia de Loja?
+
+// COMMAND ----------
+
+display(dataLoja.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
+
+// COMMAND ----------
+
+display(dataLoja.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### 11) Cual es la cantidad de hombres y mujeres en condición de empleo en la provincia de Loja?
+
+// COMMAND ----------
+
+display(dataLoja.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
+
+// COMMAND ----------
+
+display(dataLoja.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### ¿Cantidad actividad en A. Agricultura, ganadería caza y silvicultura y pesca por provincia?
 
 // COMMAND ----------
 
@@ -325,12 +363,3 @@ display(dataProvincias.where($"rama_actividad" === "01 - A. Agricultura, ganader
 // COMMAND ----------
 
 display(dataProvincias.where($"rama_actividad" === "01 - A. Agricultura, ganadería caza y silvicultura y pesca").groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
-
-// COMMAND ----------
-
-// Porcentaje de empleo/desempleo dependiendo del sexo
-display(dataLoja.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
-
-// COMMAND ----------
-
-display(dataProvincias.where($"condicion_actividad" === "7 - Desempleo abierto").groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
