@@ -50,7 +50,7 @@ val data = spark.read
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC IDs de las provincias del Ecuador obtenidos de: http://web.educacion.gob.ec/CNIE/pdf/Anexo%20con%20Codificacion.pdf
+// MAGIC IDs de las provincias y cantones del Ecuador obtenidos de: http://web.educacion.gob.ec/CNIE/pdf/Anexo%20con%20Codificacion.pdf
 
 // COMMAND ----------
 
@@ -83,11 +83,21 @@ val dataProvincias = data.na.replace("provincia", Map(
 
 // COMMAND ----------
 
+// MAGIC %md
+// MAGIC ### Esquema del dataframe para los cantones
+
+// COMMAND ----------
+
 val schemaCantones = StructType(
 	Array(
 		StructField("idCanton", IntegerType, true),
 		StructField("cantones", StringType, true)
       ));
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### Creación del dataframe cantones
 
 // COMMAND ----------
 
@@ -101,7 +111,17 @@ val cantones = spark
 
 // COMMAND ----------
 
+// MAGIC %md
+// MAGIC ### Uso de la funcion INNERJOIN para unir ambos dataframes según la columna en común
+
+// COMMAND ----------
+
 val dataCantones = dataProvincias.join(cantones, dataProvincias("canton") === cantones("idCanton"), "inner")
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### Eliminación de las columnas sobrantes con la función drop, luego de haber unido los dataframes
 
 // COMMAND ----------
 
@@ -109,7 +129,12 @@ val dataFinal = dataCantones.drop("canton").drop("idCanton")
 
 // COMMAND ----------
 
-dataFinal.show
+// MAGIC %md
+// MAGIC ### RESULTADO DEL DATASET FINAL
+
+// COMMAND ----------
+
+display(dataFinal)
 
 // COMMAND ----------
 
