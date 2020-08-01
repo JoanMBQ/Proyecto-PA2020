@@ -83,6 +83,32 @@ val dataProvincias = data.na.replace("provincia", Map(
 
 // COMMAND ----------
 
+val schemaCantones = StructType(
+	Array(
+		StructField("idCanton", IntegerType, true),
+		StructField("cantones", StringType, true)
+      ));
+
+// COMMAND ----------
+
+val cantones = spark
+    .read
+    .schema(schemaCantones)
+	.option("header","true")
+	.option("delimiter",";")
+    .option("encoding", "ISO-8859-1")
+	.csv("/FileStore/tables/Cantones.csv");
+
+// COMMAND ----------
+
+val dataCantones = dataProvincias.join(cantones, dataProvincias("canton") === cantones("idCanton"), "inner")
+
+// COMMAND ----------
+
+val dataFinal = dataCantones.drop("canton").drop("idCanton")
+
+// COMMAND ----------
+
 // MAGIC %md
 // MAGIC ### DATAFRAME DE LA PROVINCIA DE LOJA
 
@@ -194,7 +220,16 @@ display(dataProvincias.groupBy("anio").pivot("provincia").agg(sum("ingreso_labor
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 6) ¿Cuántas personas económicamente activas por provincia están en la condición de Desempleo?
+// MAGIC ### 6) ¿Cúal es el porcentaje de personas en las diferentes condiciones de actividad en el Ecuador?
+
+// COMMAND ----------
+
+display(dataProvincias.groupBy(col("anio").as("Año")).pivot("condicion_actividad").count().orderBy("Año"))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### 7) ¿Cuántas personas económicamente activas por provincia están en la condición de Desempleo?
 // MAGIC Se desea conocer cuantas de las personas económicamente activas encuestadas se encontraban en la condicion de desempleo.
 
 // COMMAND ----------
@@ -225,8 +260,12 @@ display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto"
 
 // COMMAND ----------
 
+display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"));
+
+// COMMAND ----------
+
 // MAGIC %md
-// MAGIC ### 7) ¿Cuántas personas económicamente activas por provincia están en la condición de Empleo Adecuado o Pleno?
+// MAGIC ### 8) ¿Cuántas personas económicamente activas por provincia están en la condición de Empleo Adecuado o Pleno?
 // MAGIC Se desea conocer cuantas de las personas económicamente activas encuestadas se encontraban en la condicion de desempleo.
 
 // COMMAND ----------
@@ -258,8 +297,12 @@ display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto"
 
 // COMMAND ----------
 
+display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+
+// COMMAND ----------
+
 // MAGIC %md
-// MAGIC ### 7.1) Cuantas de las personas con empleo tienen un empleo adecuado o pleno?
+// MAGIC ### 8.1) Cuantas de las personas con empleo tienen un empleo adecuado o pleno?
 // MAGIC Tomando en cuenta los datos obtenidos anteriormente, se desea saber cuantas personas encuestadas se encontraban en la condición de trabajar en un empleo pleno.
 
 // COMMAND ----------
@@ -291,8 +334,12 @@ display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Ple
 
 // COMMAND ----------
 
+display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+
+// COMMAND ----------
+
 // MAGIC %md
-// MAGIC ### 8) ¿Cuál es el número de personas economicamente activas en los diferentes sectores en el Ecuador?
+// MAGIC ### 9) ¿Cuál es el número de personas economicamente activas en los diferentes sectores en el Ecuador?
 
 // COMMAND ----------
 
@@ -310,7 +357,7 @@ display(dataProvincias.groupBy(col("anio").as("Año")).pivot("sectorizacion").co
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 9) ¿Cuál es el número de personas economicamente activas en los diferentes sectores en la provincia de Loja?
+// MAGIC ### 10) ¿Cuál es el número de personas economicamente activas en los diferentes sectores en la provincia de Loja?
 
 // COMMAND ----------
 
@@ -323,12 +370,12 @@ display(dataLoja.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().
 
 // COMMAND ----------
 
-display(dataLoja.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy( $"1 - Sector Formal".desc))
+display(dataLoja.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy("Año"))
 
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 10) Cual es la cantidad de hombres y mujeres en condición de desempleo en la provincia de Loja?
+// MAGIC ### 11) Cual es la cantidad de hombres y mujeres en condición de desempleo en la provincia de Loja?
 
 // COMMAND ----------
 
@@ -341,7 +388,7 @@ display(dataLoja.where(($"condicion_actividad" === "7 - Desempleo abierto") || (
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 11) Cual es la cantidad de hombres y mujeres en condición de empleo en la provincia de Loja?
+// MAGIC ### 12) Cual es la cantidad de hombres y mujeres en condición de empleo en la provincia de Loja?
 
 // COMMAND ----------
 
@@ -350,16 +397,3 @@ display(dataLoja.where(($"condicion_actividad" !== "7 - Desempleo abierto") || (
 // COMMAND ----------
 
 display(dataLoja.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
-
-// COMMAND ----------
-
-// MAGIC %md
-// MAGIC ### ¿Cantidad actividad en A. Agricultura, ganadería caza y silvicultura y pesca por provincia?
-
-// COMMAND ----------
-
-display(dataProvincias.where($"rama_actividad" === "01 - A. Agricultura, ganadería caza y silvicultura y pesca").groupBy("provincia").count().sort($"count".desc))
-
-// COMMAND ----------
-
-display(dataProvincias.where($"rama_actividad" === "01 - A. Agricultura, ganadería caza y silvicultura y pesca").groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
