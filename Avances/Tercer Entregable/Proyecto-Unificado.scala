@@ -109,12 +109,16 @@ val dataFinal = dataCantones.drop("canton").drop("idCanton")
 
 // COMMAND ----------
 
+dataFinal.createOrReplaceTempView("EDU_TABLE")
+
+// COMMAND ----------
+
 // MAGIC %md
 // MAGIC ### DATAFRAME DE LA PROVINCIA DE LOJA
 
 // COMMAND ----------
 
-val dataLoja = dataProvincias.where($"provincia" === "Loja")
+val dataLoja = dataFinal.where($"provincia" === "Loja")
 dataLoja.count
 
 // COMMAND ----------
@@ -129,7 +133,7 @@ dataLoja.count
 
 // COMMAND ----------
 
-display(dataProvincias.where($"edad" === 15).where($"condicion_actividad" === "5 - Empleo no remunerado").groupBy("anio").pivot("provincia").count().orderBy("anio"))
+display(dataFinal.where($"edad" === 15).where($"condicion_actividad" === "5 - Empleo no remunerado").groupBy("anio").pivot("provincia").count().orderBy("anio"))
 
 // COMMAND ----------
 
@@ -142,19 +146,19 @@ dataProvincias.where($"edad" === 15).where($"condicion_actividad" === "5 - Emple
 
 // COMMAND ----------
 
-display(dataProvincias.where($"edad" >= 15).where($"edad" <= 30).groupBy("anio").pivot("provincia").count().orderBy("anio"))
+display(dataFinal.where($"edad" >= 15).where($"edad" <= 30).groupBy("anio").pivot("provincia").count().orderBy("anio"))
 
 // COMMAND ----------
 
-display(dataProvincias.where($"edad" >= 31).where($"edad" <= 50).groupBy("anio").pivot("provincia").count().orderBy("anio"))
+display(dataFinal.where($"edad" >= 31).where($"edad" <= 50).groupBy("anio").pivot("provincia").count().orderBy("anio"))
 
 // COMMAND ----------
 
-display(dataProvincias.where($"edad" >= 51).where($"edad" <= 70).groupBy("anio").pivot("provincia").count().orderBy("anio"))
+display(dataFinal.where($"edad" >= 51).where($"edad" <= 70).groupBy("anio").pivot("provincia").count().orderBy("anio"))
 
 // COMMAND ----------
 
-display(dataProvincias.where($"edad" >= 71).groupBy("anio").pivot("provincia").count().orderBy("anio"))
+display(dataFinal.where($"edad" >= 71).groupBy("anio").pivot("provincia").count().orderBy("anio"))
 
 // COMMAND ----------
 
@@ -163,7 +167,7 @@ display(dataProvincias.where($"edad" >= 71).groupBy("anio").pivot("provincia").c
 
 // COMMAND ----------
 
-display(dataProvincias.where($"nivel_de_instruccion" === "02 - Centro de alfabetización").groupBy("provincia").count().sort(desc("count")))
+display(dataFinal.where($"nivel_de_instruccion" === "02 - Centro de alfabetización").groupBy("provincia").count().sort(desc("count")))
 
 // COMMAND ----------
 
@@ -211,11 +215,11 @@ display(etniasLoja)
 
 // COMMAND ----------
 
-display(dataProvincias.groupBy("provincia").agg(sum("ingreso_laboral") as ("Total de ingresos")).sort(desc("Total de ingresos")))
+display(dataFinal.groupBy("provincia").agg(sum("ingreso_laboral") as ("Total de ingresos")).sort(desc("Total de ingresos")))
 
 // COMMAND ----------
 
-display(dataProvincias.groupBy("anio").pivot("provincia").agg(sum("ingreso_laboral") as ("Total de ingresos")).orderBy("anio"))
+display(dataFinal.groupBy("anio").pivot("provincia").agg(sum("ingreso_laboral") as ("Total de ingresos")).orderBy("anio"))
 
 // COMMAND ----------
 
@@ -224,7 +228,7 @@ display(dataProvincias.groupBy("anio").pivot("provincia").agg(sum("ingreso_labor
 
 // COMMAND ----------
 
-display(dataProvincias.groupBy(col("anio").as("Año")).pivot("condicion_actividad").count().orderBy("Año"))
+display(dataFinal.groupBy(col("anio").as("Año")).pivot("condicion_actividad").count().orderBy("Año"))
 
 // COMMAND ----------
 
@@ -234,20 +238,36 @@ display(dataProvincias.groupBy(col("anio").as("Año")).pivot("condicion_activida
 
 // COMMAND ----------
 
-// MAGIC %md
-// MAGIC Primero se procederá a obtener el total de encuestados por provincia que estuvieran en condición de desempleo entre los años 2015 y 2019.
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2015 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad = '7 - Desempleo abierto'
+    OR e.condicion_actividad = '8 - Desempleo oculto'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2015 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).where($"anio" === 2015).groupBy("provincia").count().sort($"count".desc))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2017 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad = '7 - Desempleo abierto'
+    OR e.condicion_actividad = '8 - Desempleo oculto'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2017 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).where($"anio" === 2017).groupBy("provincia").count().sort($"count".desc))
-
-// COMMAND ----------
-
-display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).where($"anio" === 2019).groupBy("provincia").count().sort($"count".desc))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2019 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad = '7 - Desempleo abierto'
+    OR e.condicion_actividad = '8 - Desempleo oculto'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2019 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
@@ -256,11 +276,19 @@ display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto"
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"));
+display(dataFinal
+        .where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("provincia").count()
+        .orderBy("Año"));
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"));
+display(dataFinal
+        .where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("provincia").count()
+        .orderBy("Año"));
 
 // COMMAND ----------
 
@@ -270,21 +298,36 @@ display(dataProvincias.where(($"condicion_actividad" === "7 - Desempleo abierto"
 
 // COMMAND ----------
 
-// MAGIC %md
-// MAGIC 
-// MAGIC Primero se procederá a obtener el total de encuestados por provincia que estuvieran en condición de desempleo entre los años 2015 y 2019.
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2015 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad != '7 - Desempleo abierto'
+    OR e.condicion_actividad != '8 - Desempleo oculto'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2015 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2015).groupBy("provincia").count().sort($"count".desc))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2017 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad != '7 - Desempleo abierto'
+    OR e.condicion_actividad != '8 - Desempleo oculto'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2017 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2017).groupBy("provincia").count().sort($"count".desc))
-
-// COMMAND ----------
-
-display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2019).groupBy("provincia").count().sort($"count".desc))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2019 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad != '7 - Desempleo abierto'
+    OR e.condicion_actividad != '8 - Desempleo oculto'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2019 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
@@ -293,11 +336,19 @@ display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto"
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+display(dataFinal
+        .where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("provincia").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
-display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+display(dataFinal
+        .where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("provincia").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
@@ -307,20 +358,33 @@ display(dataProvincias.where(($"condicion_actividad" !== "7 - Desempleo abierto"
 
 // COMMAND ----------
 
-// MAGIC %md
-// MAGIC Primero obtenemos el total de encuestados por provincia que estuvieran en condición de desempleo entre los años 2015 y 2019.
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2015 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad = '1 - Empleo Adecuado/Pleno'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2015 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
-display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").where($"anio" === 2015).groupBy("provincia").count().sort($"count".desc))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2017 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad = '1 - Empleo Adecuado/Pleno'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2017 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
-display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").where($"anio" === 2017).groupBy("provincia").count().sort($"count".desc))
-
-// COMMAND ----------
-
-display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").where($"anio" === 2019).groupBy("provincia").count().sort($"count".desc))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2019 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad = '1 - Empleo Adecuado/Pleno'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2019 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
@@ -330,11 +394,19 @@ display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Ple
 // COMMAND ----------
 
 // DBTITLE 0,Untitled
-display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+display(dataFinal
+        .where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno")
+        .groupBy(col("anio").as("Año"))
+        .pivot("provincia").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
-display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+display(dataFinal
+        .where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno")
+        .groupBy(col("anio").as("Año"))
+        .pivot("provincia").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
@@ -343,7 +415,7 @@ display(dataProvincias.where($"condicion_actividad" === "1 - Empleo Adecuado/Ple
 
 // COMMAND ----------
 
-display(dataProvincias.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy("Año"))
+display(dataFinal.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy("Año"))
 
 // COMMAND ----------
 
@@ -352,7 +424,10 @@ display(dataProvincias.groupBy(col("anio").as("Año")).pivot("sectorizacion").co
 
 // COMMAND ----------
 
-display(dataProvincias.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy("Año"))
+display(dataFinal
+        .groupBy(col("anio").as("Año"))
+        .pivot("sectorizacion").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
@@ -361,7 +436,10 @@ display(dataProvincias.groupBy(col("anio").as("Año")).pivot("sectorizacion").co
 
 // COMMAND ----------
 
-display(dataLoja.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy("Año"))
+display(dataLoja
+        .groupBy(col("anio").as("Año"))
+        .pivot("sectorizacion").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
@@ -370,7 +448,10 @@ display(dataLoja.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().
 
 // COMMAND ----------
 
-display(dataLoja.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy("Año"))
+display(dataLoja
+        .groupBy(col("anio").as("Año"))
+        .pivot("sectorizacion").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
@@ -379,11 +460,19 @@ display(dataLoja.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().
 
 // COMMAND ----------
 
-display(dataLoja.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
+display(dataLoja.
+        where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("genero").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
-display(dataLoja.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
+display(dataLoja
+        .where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("genero").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
@@ -392,8 +481,16 @@ display(dataLoja.where(($"condicion_actividad" === "7 - Desempleo abierto") || (
 
 // COMMAND ----------
 
-display(dataLoja.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
+display(dataLoja
+        .where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("genero").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
-display(dataLoja.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
+display(dataLoja
+        .where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("genero").count()
+        .orderBy("Año"))
