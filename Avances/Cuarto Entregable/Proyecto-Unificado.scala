@@ -83,21 +83,11 @@ val dataProvincias = data.na.replace("provincia", Map(
 
 // COMMAND ----------
 
-// MAGIC %md
-// MAGIC ### Esquema del dataframe para los cantones
-
-// COMMAND ----------
-
 val schemaCantones = StructType(
 	Array(
 		StructField("idCanton", IntegerType, true),
 		StructField("cantones", StringType, true)
       ));
-
-// COMMAND ----------
-
-// MAGIC %md
-// MAGIC ### Creación del dataframe cantones
 
 // COMMAND ----------
 
@@ -111,17 +101,7 @@ val cantones = spark
 
 // COMMAND ----------
 
-// MAGIC %md
-// MAGIC ### Uso de la funcion INNERJOIN para unir ambos dataframes según la columna en común
-
-// COMMAND ----------
-
 val dataCantones = dataProvincias.join(cantones, dataProvincias("canton") === cantones("idCanton"), "inner")
-
-// COMMAND ----------
-
-// MAGIC %md
-// MAGIC ### Eliminación de las columnas sobrantes con la función drop, luego de haber unido los dataframes
 
 // COMMAND ----------
 
@@ -129,12 +109,7 @@ val dataFinal = dataCantones.drop("canton").drop("idCanton")
 
 // COMMAND ----------
 
-// MAGIC %md
-// MAGIC ### RESULTADO DEL DATASET FINAL
-
-// COMMAND ----------
-
-display(dataFinal)
+dataFinal.createOrReplaceTempView("EDU_TABLE")
 
 // COMMAND ----------
 
@@ -149,12 +124,8 @@ dataLoja.count
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 1) ¿Cuál es la cantidad de personas por provincia que son menores de edad y tienen un empleo no remunerado? y ¿cuál es el total de todas las provincias?
-
-// COMMAND ----------
-
-// MAGIC %md
-// MAGIC ### Primeramente se muestra la tabla con las personas por provincias que no cumplen los 18 años
+// MAGIC ### 1) ¿Cuál es la cantidad de personas por provincia que tienen la edad mínima y tienen un empleo no remunerado? y ¿cuál es el total de todas las provincias?
+// MAGIC Primeramente se muestra la tabla con las personas por provincias que no cumplen los 18 años
 
 // COMMAND ----------
 
@@ -163,7 +134,7 @@ display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"anio" === 20
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### Luego, se logra contrastar los resultados entre los menores de edad por provincia, la cantidad de personas que tienen un empleo no remurado en comparación con los que tienen un empleao adecuado o pleno
+// MAGIC Luego, se logra contrastar los resultados entre los menores de edad por provincia, la cantidad de personas que tienen un empleo no remurado en comparación con los que tienen un empleao adecuado o pleno
 
 // COMMAND ----------
 
@@ -171,7 +142,7 @@ display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"anio" === 20
 
 // COMMAND ----------
 
-display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"anio" === 2019).where($"condicion_actividad" === "5 - Empleo no remunerado").groupBy("provincia").count().sort("count"))
+display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"anio" === 2019).where($"condicion_actividad" === "5 - Empleo no remunerado").groupBy("provincia").count().sort(desc("count")))
 
 // COMMAND ----------
 
@@ -188,7 +159,12 @@ dataFinal.where($"edad" === 15).where($"condicion_actividad" === "5 - Empleo no 
 
 // COMMAND ----------
 
-display(dataFinal.groupBy("provincia").agg(sum("ingreso_laboral") as ("Total de ingresos")).sort(desc("Total de ingresos")))
+ display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(e.ingreso_laboral) AS Total
+    FROM EDU_TABLE e
+    GROUP BY e.provincia
+    ORDER BY 2 DESC
+"""));
 
 // COMMAND ----------
 
@@ -222,12 +198,18 @@ display(dataFinal.groupBy("anio").pivot("provincia").agg(sum("ingreso_laboral") 
 
 // COMMAND ----------
 
-display(dataFinal.where($"nivel_de_instruccion" === "02 - Centro de alfabetización").groupBy("provincia").count().sort(desc("count")))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, count(*)
+    FROM EDU_TABLE e
+    WHERE e.nivel_de_instruccion = '02 - Centro de alfabetización'
+    GROUP BY e.provincia
+    ORDER BY 2 DESC
+"""));
 
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 5) ¿Cuál es la cantidad de empleados según su área de la provincia Chimborazo que están en centro de alfabetización?
+// MAGIC ### 5) ¿Cuál es el porcentaje de empleados según su área de la provincia Chimborazo que están en centro de alfabetización?
 
 // COMMAND ----------
 
@@ -240,25 +222,50 @@ display(dataFinal.where($"nivel_de_instruccion" === "02 - Centro de alfabetizaci
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 6) ¿Cuántas personas económicamente activas por provincia están en la condición de Desempleo?
-// MAGIC Se desea conocer cuantas de las personas económicamente activas encuestadas se encontraban en la condicion de desempleo.
+// MAGIC ### 6) ¿Cúal es el porcentaje de personas en las diferentes condiciones de actividad en el Ecuador?
+
+// COMMAND ----------
+
+display(dataFinal.groupBy(col("anio").as("Año")).pivot("condicion_actividad").count().orderBy("Año"))
 
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC Primero se procederá a obtener el total de encuestados por provincia que estuvieran en condición de desempleo entre los años 2015 y 2019.
+// MAGIC ### 7) ¿Cuántas personas económicamente activas por provincia están en la condición de Desempleo?
+// MAGIC Se desea conocer cuantas de las personas económicamente activas encuestadas se encontraban en la condicion de desempleo.
 
 // COMMAND ----------
 
-display(dataFinal.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).where($"anio" === 2015).groupBy("provincia").count().sort($"count".desc))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2015 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad = '7 - Desempleo abierto'
+    OR e.condicion_actividad = '8 - Desempleo oculto'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2015 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
-display(dataFinal.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).where($"anio" === 2017).groupBy("provincia").count().sort($"count".desc))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2017 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad = '7 - Desempleo abierto'
+    OR e.condicion_actividad = '8 - Desempleo oculto'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2017 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
-display(dataFinal.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).where($"anio" === 2019).groupBy("provincia").count().sort($"count".desc))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2019 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad = '7 - Desempleo abierto'
+    OR e.condicion_actividad = '8 - Desempleo oculto'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2019 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
@@ -267,31 +274,58 @@ display(dataFinal.where(($"condicion_actividad" === "7 - Desempleo abierto") || 
 
 // COMMAND ----------
 
-display(dataFinal.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"));
+display(dataFinal
+        .where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("provincia").count()
+        .orderBy("Año"));
+
+// COMMAND ----------
+
+display(dataFinal
+        .where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("provincia").count()
+        .orderBy("Año"));
 
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 7) ¿Cuántas personas económicamente activas por provincia están en la condición de Empleo Adecuado o Pleno?
+// MAGIC ### 8) ¿Cuántas personas económicamente activas por provincia están en la condición de Empleo Adecuado o Pleno?
 // MAGIC Se desea conocer cuantas de las personas económicamente activas encuestadas se encontraban en la condicion de desempleo.
 
 // COMMAND ----------
 
-// MAGIC %md
-// MAGIC 
-// MAGIC Primero se procederá a obtener el total de encuestados por provincia que estuvieran en condición de desempleo entre los años 2015 y 2019.
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2015 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad != '7 - Desempleo abierto'
+    OR e.condicion_actividad != '8 - Desempleo oculto'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2015 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
-display(dataFinal.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2015).groupBy("provincia").count().sort($"count".desc))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2017 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad != '7 - Desempleo abierto'
+    OR e.condicion_actividad != '8 - Desempleo oculto'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2017 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
-display(dataFinal.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2017).groupBy("provincia").count().sort($"count".desc))
-
-// COMMAND ----------
-
-display(dataFinal.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).where($"anio" === 2019).groupBy("provincia").count().sort($"count".desc))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2019 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad != '7 - Desempleo abierto'
+    OR e.condicion_actividad != '8 - Desempleo oculto'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2019 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
@@ -300,30 +334,55 @@ display(dataFinal.where(($"condicion_actividad" !== "7 - Desempleo abierto") || 
 
 // COMMAND ----------
 
-display(dataFinal.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+display(dataFinal
+        .where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("provincia").count()
+        .orderBy("Año"))
+
+// COMMAND ----------
+
+display(dataFinal
+        .where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("provincia").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 7.1) Cuantas de las personas con empleo tienen un empleo adecuado o pleno?
+// MAGIC ### 8.1) Cuantas de las personas con empleo tienen un empleo adecuado o pleno?
 // MAGIC Tomando en cuenta los datos obtenidos anteriormente, se desea saber cuantas personas encuestadas se encontraban en la condición de trabajar en un empleo pleno.
 
 // COMMAND ----------
 
-// MAGIC %md
-// MAGIC Primero obtenemos el total de encuestados por provincia que estuvieran en condición de desempleo entre los años 2015 y 2019.
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2015 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad = '1 - Empleo Adecuado/Pleno'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2015 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
-display(dataFinal.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").where($"anio" === 2015).groupBy("provincia").count().sort($"count".desc))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2017 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad = '1 - Empleo Adecuado/Pleno'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2017 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
-display(dataFinal.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").where($"anio" === 2017).groupBy("provincia").count().sort($"count".desc))
-
-// COMMAND ----------
-
-display(dataFinal.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").where($"anio" === 2019).groupBy("provincia").count().sort($"count".desc))
+display(spark.sql("""
+    SELECT e.provincia AS Provincias, SUM(CASE WHEN e.anio = 2019 THEN 1 ELSE 0 END) AS N_Personas
+    FROM EDU_TABLE e
+    WHERE e.condicion_actividad = '1 - Empleo Adecuado/Pleno'
+    GROUP BY e.provincia
+    ORDER BY SUM(CASE WHEN e.anio = 2019 THEN 1 ELSE 0 END) DESC
+"""));
 
 // COMMAND ----------
 
@@ -333,12 +392,24 @@ display(dataFinal.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").
 // COMMAND ----------
 
 // DBTITLE 0,Untitled
-display(dataFinal.where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+display(dataFinal
+        .where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno")
+        .groupBy(col("anio").as("Año"))
+        .pivot("provincia").count()
+        .orderBy("Año"))
+
+// COMMAND ----------
+
+display(dataFinal
+        .where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno")
+        .groupBy(col("anio").as("Año"))
+        .pivot("provincia").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 8) ¿Cuál es el número de personas economicamente activas en los diferentes sectores en el Ecuador?
+// MAGIC ### 9) ¿Cuál es el número de personas economicamente activas en los diferentes sectores en el Ecuador?
 
 // COMMAND ----------
 
@@ -351,16 +422,22 @@ display(dataFinal.groupBy(col("anio").as("Año")).pivot("sectorizacion").count()
 
 // COMMAND ----------
 
-display(dataFinal.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy("Año"))
+display(dataFinal
+        .groupBy(col("anio").as("Año"))
+        .pivot("sectorizacion").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 9) ¿Cuál es el número de personas economicamente activas en los diferentes sectores en la provincia de Loja?
+// MAGIC ### 10) ¿Cuál es el número de personas economicamente activas en los diferentes sectores en la provincia de Loja?
 
 // COMMAND ----------
 
-display(dataLoja.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy("Año"))
+display(dataLoja
+        .groupBy(col("anio").as("Año"))
+        .pivot("sectorizacion").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
@@ -369,43 +446,49 @@ display(dataLoja.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().
 
 // COMMAND ----------
 
-display(dataLoja.groupBy(col("anio").as("Año")).pivot("sectorizacion").count().orderBy( $"1 - Sector Formal".desc))
+display(dataLoja
+        .groupBy(col("anio").as("Año"))
+        .pivot("sectorizacion").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 10) Cual es la cantidad de hombres y mujeres en condición de desempleo en la provincia de Loja?
+// MAGIC ### 11) Cual es la cantidad de hombres y mujeres en condición de desempleo en la provincia de Loja?
 
 // COMMAND ----------
 
-display(dataLoja.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
+display(dataLoja.
+        where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("genero").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
-display(dataLoja.where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
-
-// COMMAND ----------
-
-// MAGIC %md
-// MAGIC ### 11) Cual es la cantidad de hombres y mujeres en condición de empleo en la provincia de Loja?
-
-// COMMAND ----------
-
-display(dataLoja.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
-
-// COMMAND ----------
-
-display(dataLoja.where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto")).groupBy(col("anio").as("Año")).pivot("genero").count().orderBy("Año"))
+display(dataLoja
+        .where(($"condicion_actividad" === "7 - Desempleo abierto") || ($"condicion_actividad" === "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("genero").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### ¿Cantidad actividad en A. Agricultura, ganadería caza y silvicultura y pesca por provincia?
+// MAGIC ### 12) Cual es la cantidad de hombres y mujeres en condición de empleo en la provincia de Loja?
 
 // COMMAND ----------
 
-display(dataFinal.where($"rama_actividad" === "01 - A. Agricultura, ganadería caza y silvicultura y pesca").groupBy("provincia").count().sort($"count".desc))
+display(dataLoja
+        .where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("genero").count()
+        .orderBy("Año"))
 
 // COMMAND ----------
 
-display(dataFinal.where($"rama_actividad" === "01 - A. Agricultura, ganadería caza y silvicultura y pesca").groupBy(col("anio").as("Año")).pivot("provincia").count().orderBy("Año"))
+display(dataLoja
+        .where(($"condicion_actividad" !== "7 - Desempleo abierto") || ($"condicion_actividad" !== "8 - Desempleo oculto"))
+        .groupBy(col("anio").as("Año"))
+        .pivot("genero").count()
+        .orderBy("Año"))
