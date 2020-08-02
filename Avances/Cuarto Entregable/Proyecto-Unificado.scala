@@ -149,12 +149,29 @@ dataLoja.count
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ##Preguntas - Tercer Entregable
+// MAGIC ### 1) ¿Cuál es la cantidad de personas por provincia que son menores de edad y tienen un empleo no remunerado? y ¿cuál es el total de todas las provincias?
 
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 1) ¿Cuál es la cantidad de personas por provincia que tienen la edad mínima y tienen un empleo no remunerado? y ¿cuál es el total de todas las provincias?
+// MAGIC ### Primeramente se muestra la tabla con las personas por provincias que no cumplen los 18 años
+
+// COMMAND ----------
+
+display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"anio" === 2019).groupBy("provincia").count().sort("count"))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### Luego, se logra contrastar los resultados entre los menores de edad por provincia, la cantidad de personas que tienen un empleo no remurado en comparación con los que tienen un empleao adecuado o pleno
+
+// COMMAND ----------
+
+display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"anio" === 2019).where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").groupBy("provincia").count().sort("count"))
+
+// COMMAND ----------
+
+display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"anio" === 2019).where($"condicion_actividad" === "5 - Empleo no remunerado").groupBy("provincia").count().sort("count"))
 
 // COMMAND ----------
 
@@ -167,76 +184,7 @@ dataFinal.where($"edad" === 15).where($"condicion_actividad" === "5 - Empleo no 
 // COMMAND ----------
 
 // MAGIC %md
-// MAGIC ### 2) ¿Cuál es la cantidad de personas por provincia según el siguiente rango de edades: 15-30/31-50/51-70/70+?
-
-// COMMAND ----------
-
-display(dataFinal.where($"edad" >= 15).where($"edad" <= 30).groupBy("anio").pivot("provincia").count().orderBy("anio"))
-
-// COMMAND ----------
-
-display(dataFinal.where($"edad" >= 31).where($"edad" <= 50).groupBy("anio").pivot("provincia").count().orderBy("anio"))
-
-// COMMAND ----------
-
-display(dataFinal.where($"edad" >= 51).where($"edad" <= 70).groupBy("anio").pivot("provincia").count().orderBy("anio"))
-
-// COMMAND ----------
-
-display(dataFinal.where($"edad" >= 71).groupBy("anio").pivot("provincia").count().orderBy("anio"))
-
-// COMMAND ----------
-
-// MAGIC %md
-// MAGIC ### 3) ¿En qué provincia existe mayor cantidad de empleados que están en centro de alfabetización?
-
-// COMMAND ----------
-
-display(dataFinal.where($"nivel_de_instruccion" === "02 - Centro de alfabetización").groupBy("provincia").count().sort(desc("count")))
-
-// COMMAND ----------
-
-display(dataFinal.where($"nivel_de_instruccion" === "02 - Centro de alfabetización").groupBy("anio").pivot("provincia").count().orderBy("anio"))
-
-// COMMAND ----------
-
-// MAGIC %md
-// MAGIC ### 4) ¿Cuál es el porcentaje de cada etnia en la provincia de Loja?
-
-// COMMAND ----------
-
-val dataLoja = data.where($"provincia" === "11")
-val pIndigena = (dataLoja.where($"etnia" === "1 - Indígena").count / dataLoja.count.toDouble)*100
-val pAfroecuatoriano = (dataLoja.where($"etnia" === "2 - Afroecuatoriano").count / dataLoja.count.toDouble)*100
-val pNegro = (dataLoja.where($"etnia" === "3 - Negro").count / dataLoja.count.toDouble)*100
-val pMulato = (dataLoja.where($"etnia" === "4 - Mulato").count / dataLoja.count.toDouble)*100
-val pMontubio = (dataLoja.where($"etnia" === "5 - Montubio").count / dataLoja.count.toDouble)*100
-val pMestizo = (dataLoja.where($"etnia" === "6 - Mestizo").count / dataLoja.count.toDouble)*100
-val pBlanco = (dataLoja.where($"etnia" === "7 - Blanco").count / dataLoja.count.toDouble)*100
-val pOtro = (dataLoja.where($"etnia" === "8 - Otro").count / dataLoja.count.toDouble)*100
-
-// COMMAND ----------
-
-import sqlContext.implicits._
-val etniasLoja = Seq(
-  ("Indigena", 2.55),
-  ("Afroecuatoriano", 0.22),
-  ("Negro", 0.52),
-  ("Mulato", 0.25),
-  ("Montubio", 0.18),
-  ("Mestizo", 94.80),
-  ("Blanco", 1.45),
-  ("Otro", 0.00)
-).toDF("etnia", "porcentaje")
-
-// COMMAND ----------
-
-display(etniasLoja)
-
-// COMMAND ----------
-
-// MAGIC %md
-// MAGIC ### 5) ¿Cuál es la provincia con el total más alto de ingreso laboral de sus empleados?
+// MAGIC ### 2) ¿Cuál es la provincia con el total más alto de ingreso laboral de sus empleados?
 
 // COMMAND ----------
 
@@ -244,7 +192,50 @@ display(dataFinal.groupBy("provincia").agg(sum("ingreso_laboral") as ("Total de 
 
 // COMMAND ----------
 
+// MAGIC %md
+// MAGIC ### 3) De las 4 provincias con mayor cantidad de ingreso total ¿Qué actividades son las que generan mayor cantidad de ingresos?
+
+// COMMAND ----------
+
+display(dataFinal.where($"provincia" === "Pichincha").groupBy("rama_actividad").agg(sum("ingreso_laboral") as ("Total de ingresos")).sort(desc("Total de ingresos")))
+
+// COMMAND ----------
+
+display(dataFinal.where($"provincia" === "Guayas").groupBy("rama_actividad").agg(sum("ingreso_laboral") as ("Total de ingresos")).sort(desc("Total de ingresos")))
+
+// COMMAND ----------
+
+display(dataFinal.where($"provincia" === "Tungurahua").groupBy("rama_actividad").agg(sum("ingreso_laboral") as ("Total de ingresos")).sort(desc("Total de ingresos")))
+
+// COMMAND ----------
+
+display(dataFinal.where($"provincia" === "Azuay").groupBy("rama_actividad").agg(sum("ingreso_laboral") as ("Total de ingresos")).sort(desc("Total de ingresos")))
+
+// COMMAND ----------
+
 display(dataFinal.groupBy("anio").pivot("provincia").agg(sum("ingreso_laboral") as ("Total de ingresos")).orderBy("anio"))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### 4) ¿En qué provincia existe mayor cantidad de empleados que están en centro de alfabetización?
+
+// COMMAND ----------
+
+display(dataFinal.where($"nivel_de_instruccion" === "02 - Centro de alfabetización").groupBy("provincia").count().sort(desc("count")))
+
+// COMMAND ----------
+
+// MAGIC %md
+// MAGIC ### 5) ¿Cuál es la cantidad de empleados según su área de la provincia Chimborazo que están en centro de alfabetización?
+
+// COMMAND ----------
+
+display(dataFinal.where($"provincia" === "Chimborazo").where($"nivel_de_instruccion" === "02 - Centro de alfabetización").groupBy("area").count().sort(desc("count")))
+
+// COMMAND ----------
+
+display(dataFinal.where($"nivel_de_instruccion" === "02 - Centro de alfabetización").groupBy("anio").pivot("provincia").count().orderBy("anio"))
 
 // COMMAND ----------
 
