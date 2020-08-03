@@ -129,7 +129,7 @@ dataLoja.count
 
 // COMMAND ----------
 
-display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"anio" === 2019).groupBy("provincia").count().sort("count"))
+display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"anio" === 2019).groupBy("provincia").count().sort(desc("count")))
 
 // COMMAND ----------
 
@@ -138,7 +138,7 @@ display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"anio" === 20
 
 // COMMAND ----------
 
-display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"anio" === 2019).where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").groupBy("provincia").count().sort("count"))
+display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"anio" === 2019).where($"condicion_actividad" === "1 - Empleo Adecuado/Pleno").groupBy("provincia").count().sort(desc("count")))
 
 // COMMAND ----------
 
@@ -146,7 +146,7 @@ display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"anio" === 20
 
 // COMMAND ----------
 
-display(dataFinal.where($"edad" === 15).where($"condicion_actividad" === "5 - Empleo no remunerado").groupBy("anio").pivot("provincia").count().orderBy("anio"))
+display(dataFinal.where($"edad" >= 15).where($"edad" <= 17).where($"condicion_actividad" === "5 - Empleo no remunerado").groupBy("anio").pivot("provincia").count().orderBy("anio"))
 
 // COMMAND ----------
 
